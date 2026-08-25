@@ -1,4 +1,4 @@
-# jpl-bus
+# jpl-bus-worker
 
 Cloudflare Worker that turns Pasadena Transit’s GTFS-Realtime feed into clean JSON for **route 53** (Caltech ↔ JPL).
 
