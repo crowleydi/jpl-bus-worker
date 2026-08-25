@@ -1,0 +1,15 @@
+name = "jpl-bus"
+main = "src/index.js"
+compatibility_date = "2026-08-17"
+
+[[kv_namespaces]]
+binding = "JPL_KV"
+id = "865fc136c9ff4fc288c957c74b6ade5a"
+
+[triggers]
+crons = ["30 12 * * 1-5", "30 22 * * 1-5"]
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+

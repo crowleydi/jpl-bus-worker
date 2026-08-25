@@ -1,0 +1,17 @@
+# Dependencies / build
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
