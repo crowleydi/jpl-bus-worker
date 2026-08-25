@@ -37,7 +37,9 @@ All endpoints are `GET`. Stop identifiers accept either the **stop code** printe
 ```json
 {
   "route": "53",
-  "feed_version": "20260819",
+  "feed_version": "20260824",
+  "gtfs_last_modified": "2026-08-24T10:25:35.000Z",
+  "gtfs_last_modified_epoch": 1787…,
   "updated": "5:17 PM",
   "updated_epoch": 1787…,
   "trips": [

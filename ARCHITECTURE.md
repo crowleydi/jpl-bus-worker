@@ -1,6 +1,6 @@
 # Architecture & code walk-through
 
-This document explains how `jpl-bus` works in more detail than the inline comments. It is intended for someone who wants to modify the estimation logic, the protobuf decoder, or the static-schedule refresh.
+This document explains how `jpl-bus-worker` works in more detail than the inline comments. It is intended for someone who wants to modify the estimation logic, the protobuf decoder, or the static-schedule refresh.
 
 ---
 
@@ -60,8 +60,10 @@ Both KV and `FALLBACK` store the same logical structure:
 
 ```js
 {
-  feed_version: "20260819",
-  refreshed_epoch: 1787…,          // only present after a live refresh
+  feed_version: "20260824",
+  gtfs_last_modified: "2026-08-24T10:25:35.000Z",  // HTTP Last-Modified of the zip
+  gtfs_last_modified_epoch: 1787…,
+  refreshed_epoch: 1787…,          // when we last pulled the zip into KV
   tripToRoute:  { "2451": "53", … },
   tripHeadsign: { "2451": "JPL", … },
   tripStopTimes: {
@@ -149,10 +151,10 @@ This keeps the worker small and avoids pulling in a full protobuf runtime.
 
 `refreshGtfs(env)`:
 
-1. Downloads the agency zip.
+1. Downloads the agency zip and records the HTTP `Last-Modified` header (`gtfs_last_modified` / `_epoch`).
 2. Uses a tiny zip walker (`unzipNamed`) that locates the central directory, finds the named members, and inflates them with the platform `DecompressionStream` (`deflate-raw`).
 3. Parses only `trips.txt`, `stops.txt`, `stop_times.txt`, and `feed_info.txt` via a minimal CSV splitter that understands quoted fields.
-4. Builds the schedule object described above (route 53 only).
+4. Builds the schedule object described above (route 53 only), including `feed_version` from `feed_info.txt`.
 5. Writes it to KV under the key `gtfs53`.
 
 Representative stop order for the public catalog is taken from the longest trip in each direction (`to-jpl` / `from-jpl`). Direction is inferred from `trip_headsign` (contains “JPL” or “Caltech”) with a fallback to GTFS `direction_id`.

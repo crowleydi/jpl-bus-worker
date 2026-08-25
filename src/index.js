@@ -298,6 +298,8 @@ export default {
         return json({
           ok: true,
           feed_version: sched.feed_version,
+          gtfs_last_modified: sched.gtfs_last_modified ?? null,
+          gtfs_last_modified_epoch: sched.gtfs_last_modified_epoch ?? null,
           trips: Object.keys(sched.tripToRoute).length,
           stops: sched.stops.length,
           tripStopTimes: Object.keys(sched.tripStopTimes || {}).length,
@@ -315,6 +317,8 @@ export default {
       return json({
         route: ROUTE,
         feed_version: sched.feed_version,
+        gtfs_last_modified: sched.gtfs_last_modified ?? null,
+        gtfs_last_modified_epoch: sched.gtfs_last_modified_epoch ?? null,
         source: sched.source,
         stops: sched.stops,
       });
@@ -398,6 +402,8 @@ export default {
       const body = {
         route: ROUTE,
         feed_version: sched.feed_version,
+        gtfs_last_modified: sched.gtfs_last_modified ?? null,
+        gtfs_last_modified_epoch: sched.gtfs_last_modified_epoch ?? null,
         updated: formatPT(now),
         updated_epoch: now,
         trips,
@@ -440,6 +446,19 @@ async function loadSchedule(env) {
 async function refreshGtfs(env) {
   const res = await fetch(GTFS_ZIP_URL);
   if (!res.ok) throw new Error(`gtfs zip ${res.status}`);
+
+  // Agency publish time from the HTTP header (more precise than feed_version).
+  const lmHeader = res.headers.get("Last-Modified");
+  let gtfs_last_modified = null;
+  let gtfs_last_modified_epoch = null;
+  if (lmHeader) {
+    const d = new Date(lmHeader);
+    if (!Number.isNaN(d.getTime())) {
+      gtfs_last_modified = d.toISOString();
+      gtfs_last_modified_epoch = Math.floor(d.getTime() / 1000);
+    }
+  }
+
   const zip = new Uint8Array(await res.arrayBuffer());
   const files = await unzipNamed(zip, [
     "trips.txt",
@@ -528,6 +547,8 @@ async function refreshGtfs(env) {
 
   const payload = {
     feed_version,
+    gtfs_last_modified,
+    gtfs_last_modified_epoch,
     refreshed_epoch: Math.floor(Date.now() / 1000),
     tripToRoute,
     tripHeadsign,
