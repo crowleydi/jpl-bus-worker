@@ -37,6 +37,8 @@ All endpoints are `GET`. Stop identifiers accept either the **stop code** printe
 
 The HTML page calls those same JSON endpoints from the browser. Query-param API responses are unchanged. Bare `/` with no query string is now HTML instead of the old 400 JSON hint.
 
+The picker remembers the last start/destination pair in `localStorage` and refreshes every 20 seconds.
+
 ### Example response (`?from=…&to=…`)
 
 ```json
@@ -132,8 +134,10 @@ Alternatively use the official [`cloudflare/wrangler-action`](https://github.com
 ## Project layout
 
 ```
-├── src/index.js      # single-file worker (protobuf decoder, estimation, refresh, HTML UI)
-├── wrangler.toml     # name, cron triggers, KV binding
+├── src/server.js     # HTML picker routing + delegates JSON API to index.js
+├── src/index.js      # protobuf decoder, estimation, refresh
+├── src/ui.html       # in-page picker (imported as text)
+├── wrangler.toml     # name, cron triggers, KV binding, HTML text rule
 ├── README.md         # this file
 └── ARCHITECTURE.md   # deeper explanation of the code
 ```
