@@ -1,5 +1,5 @@
 name = "jpl-bus"
-main = "src/index.js"
+main = "src/server.js"
 compatibility_date = "2026-08-17"
 
 [[kv_namespaces]]
