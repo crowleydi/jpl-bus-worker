@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Route 53 · Caltech ↔ JPL</title>
+<style>
+  :root {
+    --bg: #0e1412;
+    --card: #18211e;
+    --ink: #e8f3ec;
+    --muted: #8aa394;
+    --line: #2a3b34;
+    --accent: #7dffb3;
+    --amber: #ffd27a;
+    --pink: #ffb4d0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font: 16px/1.45 ui-rounded, "Nunito", "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 400px at 10% -10%, #1d3a2c 0%, transparent 55%),
+      radial-gradient(700px 320px at 110% 0%, #3a2a16 0%, transparent 50%),
+      var(--bg);
+  }
+  main { max-width: 42rem; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.2rem; }
+  .bus {
+    width: 3.4rem; height: 3.4rem; border-radius: 1.1rem;
+    background: linear-gradient(160deg, #8dffc0, #3ecf86);
+    display: grid; place-items: center; font-size: 1.7rem;
+    box-shadow: 0 8px 24px #7dffb344;
+  }
+  h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); font-size: .92rem; }
+  .panel {
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 1.15rem;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+  }
+  .row { display: grid; grid-template-columns: 1fr auto 1fr; gap: .6rem; align-items: end; }
+  @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+  label { display: block; font-size: .75rem; color: var(--muted); margin-bottom: .3rem; letter-spacing: .04em; text-transform: uppercase; }
+  select {
+    width: 100%;
+    color: var(--ink);
+    background: #0f1815;
+    border: 1px solid var(--line);
+    border-radius: .7rem;
+    padding: .65rem .7rem;
+    font: inherit;
+  }
+  button.swap {
+    border: 0; cursor: pointer;
+    background: #24352e; color: var(--accent);
+    border-radius: .7rem; padding: .65rem .8rem; font: inherit;
+  }
+  button.swap:hover { filter: brightness(1.15); }
+  .meta { margin: .85rem 0 0; color: var(--muted); font-size: .82rem; }
+  .trips { display: grid; gap: .7rem; margin-top: 1rem; }
+  .trip {
+    display: grid; grid-template-columns: auto 1fr auto; gap: .85rem; align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .85rem 1rem;
+  }
+  .mins { font-size: 1.7rem; font-weight: 800; color: var(--accent); min-width: 3.4rem; }
+  .mins small { display: block; font-size: .7rem; color: var(--muted); font-weight: 600; }
+  .name { font-weight: 700; }
+  .detail { color: var(--muted); font-size: .88rem; }
+  .badges { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
+  .badge {
+    font-size: .7rem; letter-spacing: .03em; text-transform: uppercase;
+    border-radius: 999px; padding: .2rem .5rem; border: 1px solid var(--line); color: var(--muted);
+  }
+  .badge.est { color: var(--amber); border-color: #5a4a22; }
+  .badge.en { color: var(--pink); border-color: #5a3344; }
+  .empty, .err { color: var(--muted); padding: 1.2rem .2rem; }
+  .err { color: #ffb4b4; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="bus" aria-hidden="true">🚌</div>
+    <div>
+      <h1>Pasadena Transit 53</h1>
+      <div class="sub">Caltech ↔ JPL · pick a pair of stops</div>
+    </div>
+  </header>
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label for="from">Start</label>
+        <select id="from"></select>
+      </div>
+      <button class="swap" id="swap" type="button" title="Swap">⇄</button>
+      <div>
+        <label for="to">Destination</label>
+        <select id="to"></select>
+      </div>
+    </div>
+    <p class="meta" id="meta">Loading stops…</p>
+  </div>
+  <div class="trips" id="trips"></div>
+</main>
+<script>
+const FROM = document.getElementById("from");
+const TO = document.getElementById("to");
+const TRIPS = document.getElementById("trips");
+const META = document.getElementById("meta");
+const KEY = "jpl53.pair";
+
+function optLabel(s) {
+  const arrow = s.dir === "to-jpl" ? "↑ JPL" : s.dir === "from-jpl" ? "↓ Caltech" : "● both";
+  return s.name + "  ·  " + s.code + "  " + arrow;
+}
+function fillSelect(el, stops, selected) {
+  const groups = [
+    ["to-jpl", "Toward JPL"],
+    ["from-jpl", "Toward Caltech"],
+    ["both", "Either direction"],
+  ];
+  el.innerHTML = "";
+  for (const [dir, label] of groups) {
+    const g = document.createElement("optgroup");
+    g.label = label;
+    for (const s of stops.filter(x => x.dir === dir)) {
+      const o = document.createElement("option");
+      o.value = s.code;
+      o.textContent = optLabel(s);
+      g.appendChild(o);
+    }
+    if (g.childElementCount) el.appendChild(g);
+  }
+  if (selected && [...el.options].some(o => o.value === selected)) el.value = selected;
+}
+function saved() {
+  try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; }
+}
+function save() { localStorage.setItem(KEY, JSON.stringify({ from: FROM.value, to: TO.value })); }
+
+async function loadStops() {
+  const r = await fetch("/?stops=1");
+  if (!r.ok) throw new Error("stops " + r.status);
+  const data = await r.json();
+  const prev = saved() || {};
+  const q = new URLSearchParams(location.search);
+  const from = q.get("from") || prev.from || "1378";
+  const to = q.get("to") || prev.to || "2707";
+  fillSelect(FROM, data.stops, from);
+  fillSelect(TO, data.stops, to);
+  META.textContent = "schedule " + (data.feed_version || "?") +
+    (data.gtfs_last_modified ? "  ·  zip " + data.gtfs_last_modified.replace("T", " ").replace(".000Z", "Z") : "");
+}
+
+function card(t) {
+  const dest = t.to || t.stop;
+  const origin = t.from;
+  const mins = dest && dest.minutes != null ? dest.minutes : "–";
+  const when = dest && dest.time ? dest.time : "";
+  const leave = origin && origin.time ? "leave " + origin.time : "";
+  const badges = [
+    t.estimated ? '<span class="badge est">estimated</span>' : "",
+    t.enroute ? '<span class="badge en">en route</span>' : "",
+    t.headsign ? '<span class="badge">' + t.headsign + "</span>" : "",
+  ].join("");
+  return '<article class="trip">' +
+    '<div class="mins">' + mins + "<small>min</small></div>" +
+    '<div><div class="name">' + (when || "soon") + "</div>" +
+    '<div class="detail">' + [leave, t.trip_id ? "trip " + t.trip_id : ""].filter(Boolean).join(" · ") + "</div></div>" +
+    '<div class="badges">' + badges + "</div></article>";
+}
+
+async function loadTrips() {
+  const from = FROM.value, to = TO.value;
+  if (!from || !to) return;
+  save();
+  const url = from === to ? "/?stop=" + encodeURIComponent(from) : "/?from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+  TRIPS.innerHTML = '<p class="empty">Checking the little buses…</p>';
+  try {
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.status);
+    const trips = data.trips || [];
+    META.textContent = "updated " + (data.updated || "just now") +
+      "  ·  schedule " + (data.feed_version || "?");
+    TRIPS.innerHTML = trips.length
+      ? trips.map(card).join("")
+      : '<p class="empty">No upcoming trips for that pair. Try the other curb, or a later window.</p>';
+  } catch (err) {
+    TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + "</p>";
+  }
+}
+
+document.getElementById("swap").onclick = () => {
+  const a = FROM.value; FROM.value = TO.value; TO.value = a; loadTrips();
+};
+FROM.onchange = TO.onchange = loadTrips;
+
+loadStops().then(loadTrips).catch(err => {
+  META.textContent = "Could not load stops";
+  TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + "</p>";
+});
+setInterval(loadTrips, 20000);
+</script>
+</body>
+</html>
