@@ -5,6 +5,7 @@ Cloudflare Worker that turns Pasadena Transit’s GTFS-Realtime feed into clean 
 Live example:
 
 ```
+https://jpl-bus.kanstin.workers.dev/                 HTML stop picker
 https://jpl-bus.kanstin.workers.dev/?from=1378&to=2707
 ```
 
@@ -18,6 +19,7 @@ The agency’s public realtime endpoint is a protobuf trip-update feed. It is sp
 - Joins against a static schedule snapshot stored in KV
 - Estimates missing stop times from scheduled offsets when the realtime feed is incomplete
 - Returns a small, CORS-friendly JSON payload suitable for a phone widget or script
+- Serves a tiny HTML picker at `/` and `/ui` so you can choose start and destination in a browser
 
 ---
 
@@ -27,10 +29,13 @@ All endpoints are `GET`. Stop identifiers accept either the **stop code** printe
 
 | Query | Purpose |
 |-------|---------|
+| `/` or `/ui` | Tiny HTML picker: choose start + destination, list upcoming trips |
 | `?stop=2707` | Upcoming arrivals at a single stop |
 | `?from=1378&to=2707` | Same-trip predictions: depart `from`, arrive `to` |
 | `?stops=1` | Full stop catalog for route 53 (for pickers) |
 | `?refresh=1` | Force a pull of the static GTFS zip into KV |
+
+The HTML page calls those same JSON endpoints from the browser. Query-param API responses are unchanged. Bare `/` with no query string is now HTML instead of the old 400 JSON hint.
 
 ### Example response (`?from=…&to=…`)
 
@@ -127,7 +132,7 @@ Alternatively use the official [`cloudflare/wrangler-action`](https://github.com
 ## Project layout
 
 ```
-├── src/index.js      # single-file worker (protobuf decoder, estimation, refresh)
+├── src/index.js      # single-file worker (protobuf decoder, estimation, refresh, HTML UI)
 ├── wrangler.toml     # name, cron triggers, KV binding
 ├── README.md         # this file
 └── ARCHITECTURE.md   # deeper explanation of the code
