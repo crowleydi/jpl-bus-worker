@@ -17,6 +17,7 @@
     --amber: #ffb347;
   }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   body {
     margin: 0;
     min-height: 100vh;
@@ -71,15 +72,16 @@
     background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .9rem 1rem;
   }
   .countdown {
-    flex: 0 0 4.6rem;
+    flex: 0 0 5.8rem;
+    width: 5.8rem;
     text-align: center;
     line-height: 1;
   }
   .countdown .num {
     display: block;
-    font-size: 2.55rem;
+    font-size: 56px;
     font-weight: 800;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.05em;
     color: var(--jpl);
   }
   .trip.enroute .countdown .num { color: var(--sky); }
@@ -255,7 +257,7 @@ function card(t) {
     ? '<div class="when arrive">' + (enroute ? "" : "arrive ") + arriveTime + "</div>"
     : "";
   return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '>' +
-    '<div class="countdown"><span class="num">' + mins + '</span><span class="unit">min</span></div>' +
+    '<div class="countdown"><span class="num" style="font-size:56px;font-weight:800;line-height:0.9">' + mins + '</span><span class="unit">min</span></div>' +
     '<div class="body">' + leaveLine + arriveLine +
     '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div>" +
     '<div class="badges">' + badges + "</div></div></article>";
