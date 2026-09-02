@@ -6,14 +6,15 @@
 <title>Route 53 · Caltech ↔ JPL</title>
 <style>
   :root {
-    --bg: #0e1412;
-    --card: #18211e;
-    --ink: #e8f3ec;
-    --muted: #8aa394;
-    --line: #2a3b34;
-    --accent: #7dffb3;
-    --amber: #ffd27a;
-    --pink: #ffb4d0;
+    --bg: #070814;
+    --card: #12162a;
+    --ink: #f3f5fb;
+    --muted: #8b93ab;
+    --line: #2a3148;
+    --jpl: #E31937;
+    --nasa: #0B3D91;
+    --sky: #7ec8ff;
+    --amber: #ffb347;
   }
   * { box-sizing: border-box; }
   body {
@@ -22,17 +23,17 @@
     font: 16px/1.45 ui-rounded, "Nunito", "Segoe UI", system-ui, sans-serif;
     color: var(--ink);
     background:
-      radial-gradient(900px 400px at 10% -10%, #1d3a2c 0%, transparent 55%),
-      radial-gradient(700px 320px at 110% 0%, #3a2a16 0%, transparent 50%),
+      radial-gradient(900px 420px at 8% -12%, #0B3D91 0%, transparent 58%),
+      radial-gradient(640px 280px at 110% -8%, #E3193744 0%, transparent 52%),
       var(--bg);
   }
   main { max-width: 42rem; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
   header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.2rem; }
   .bus {
     width: 3.4rem; height: 3.4rem; border-radius: 1.1rem;
-    background: linear-gradient(160deg, #8dffc0, #3ecf86);
+    background: linear-gradient(160deg, #1a4fb8, var(--jpl));
     display: grid; place-items: center; font-size: 1.7rem;
-    box-shadow: 0 8px 24px #7dffb344;
+    box-shadow: 0 8px 24px #E3193744;
   }
   h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.02em; }
   .sub { color: var(--muted); font-size: .92rem; }
@@ -49,7 +50,7 @@
   select {
     width: 100%;
     color: var(--ink);
-    background: #0f1815;
+    background: #0a0e1c;
     border: 1px solid var(--line);
     border-radius: .7rem;
     padding: .65rem .7rem;
@@ -57,7 +58,7 @@
   }
   button.swap {
     border: 0; cursor: pointer;
-    background: #24352e; color: var(--accent);
+    background: #1a2240; color: var(--sky);
     border-radius: .7rem; padding: .65rem .8rem; font: inherit;
   }
   button.swap:hover { filter: brightness(1.15); }
@@ -67,19 +68,33 @@
     display: grid; grid-template-columns: auto 1fr auto; gap: .85rem; align-items: center;
     background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .85rem 1rem;
   }
-  .mins { font-size: 1.7rem; font-weight: 800; color: var(--accent); min-width: 3.4rem; }
+  .mins {
+    font-size: 1.7rem; font-weight: 800; color: var(--jpl); min-width: 3.4rem;
+  }
+  .trip.enroute .mins { color: var(--sky); }
   .mins small { display: block; font-size: .7rem; color: var(--muted); font-weight: 600; }
-  .name { font-weight: 700; }
-  .detail { color: var(--muted); font-size: .88rem; }
+  .when {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: .92rem;
+  }
+  .trip.waiting .leave,
+  .trip.enroute .arrive {
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+  }
+  .detail { color: var(--muted); font-size: .82rem; margin-top: .15rem; }
   .badges { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
   .badge {
     font-size: .7rem; letter-spacing: .03em; text-transform: uppercase;
     border-radius: 999px; padding: .2rem .5rem; border: 1px solid var(--line); color: var(--muted);
   }
   .badge.est { color: var(--amber); border-color: #5a4a22; }
-  .badge.en { color: var(--pink); border-color: #5a3344; }
+  .badge.en { color: var(--sky); border-color: #2a4a66; }
   .empty, .err { color: var(--muted); padding: 1.2rem .2rem; }
-  .err { color: #ffb4b4; }
+  .err { color: #ff8a9b; }
 </style>
 </head>
 <body>
@@ -200,18 +215,29 @@ async function loadStops() {
 function card(t) {
   const dest = t.to || t.stop;
   const origin = t.from;
-  const mins = dest && dest.minutes != null ? dest.minutes : "–";
-  const when = dest && dest.time ? dest.time : "";
-  const leave = origin && origin.time ? "leave " + origin.time : "";
+  const enroute = !!t.enroute;
+  const boardMins = origin && origin.minutes != null ? origin.minutes : null;
+  const arriveMins = dest && dest.minutes != null ? dest.minutes : null;
+  const mins = enroute
+    ? (arriveMins != null ? arriveMins : "–")
+    : (boardMins != null ? boardMins : (arriveMins != null ? arriveMins : "–"));
+  const leaveTime = origin && origin.time ? origin.time : "";
+  const arriveTime = dest && dest.time ? dest.time : "";
   const badges = [
     t.estimated ? '<span class="badge est">estimated</span>' : "",
-    t.enroute ? '<span class="badge en">en route</span>' : "",
+    enroute ? '<span class="badge en">en route</span>' : "",
     t.headsign ? '<span class="badge">' + t.headsign + "</span>" : "",
   ].join("");
-  return '<article class="trip">' +
+  const leaveLine = leaveTime
+    ? '<div class="when leave">' + (enroute ? "left " : "") + leaveTime + "</div>"
+    : "";
+  const arriveLine = arriveTime
+    ? '<div class="when arrive">' + (enroute ? "" : "arrive ") + arriveTime + "</div>"
+    : "";
+  return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '>' +
     '<div class="mins">' + mins + "<small>min</small></div>" +
-    '<div><div class="name">' + (when || "soon") + "</div>" +
-    '<div class="detail">' + [leave, t.trip_id ? "trip " + t.trip_id : ""].filter(Boolean).join(" · ") + "</div></div>" +
+    '<div class="times">' + leaveLine + arriveLine +
+    '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div></div>" +
     '<div class="badges">' + badges + "</div></article>";
 }
 
