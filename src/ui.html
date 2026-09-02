@@ -97,7 +97,7 @@
         <label for="from">Start</label>
         <select id="from"></select>
       </div>
-      <button class="swap" id="swap" type="button" title="Swap">⇄</button>
+      <button class="swap" id="swap" type="button" title="Swap directions (other curb)">⇄</button>
       <div>
         <label for="to">Destination</label>
         <select id="to"></select>
@@ -113,6 +113,19 @@ const TO = document.getElementById("to");
 const TRIPS = document.getElementById("trips");
 const META = document.getElementById("meta");
 const KEY = "jpl53.pair";
+let twins = {};
+
+// Same-intersection names usually match. These are the nearby-but-renamed twins.
+const NEARBY = {
+  "322": "309",   // Maintenance Yards ↔ Mountain St & I-210
+  "309": "322",
+  "5161": "11972", // Mountain & Fair Oaks ↔ Fair Oaks & Mountain
+  "11972": "5161",
+  "1709": "10261", // Walnut & Raymond ↔ Walnut & Fair Oaks
+  "10261": "1709",
+  "1383": "13681", // Del Mar & Lake ↔ Lake & San Pasqual
+  "13681": "1383",
+};
 
 function optLabel(s) {
   const arrow = s.dir === "to-jpl" ? "↑ JPL" : s.dir === "from-jpl" ? "↓ Caltech" : "● both";
@@ -143,10 +156,37 @@ function saved() {
 }
 function save() { localStorage.setItem(KEY, JSON.stringify({ from: FROM.value, to: TO.value })); }
 
+function buildTwins(stops) {
+  const map = { ...NEARBY };
+  const byName = {};
+  for (const s of stops) (byName[s.name] ||= []).push(s);
+  for (const group of Object.values(byName)) {
+    const inbound = group.find(s => s.dir === "to-jpl");
+    const outbound = group.find(s => s.dir === "from-jpl");
+    const both = group.find(s => s.dir === "both");
+    if (both) map[both.code] = both.code;
+    if (inbound && outbound) {
+      if (!map[inbound.code]) map[inbound.code] = outbound.code;
+      if (!map[outbound.code]) map[outbound.code] = inbound.code;
+    }
+  }
+  return map;
+}
+
+function twinOf(code) {
+  return twins[code] || code;
+}
+
+function setSelect(el, code, fallback) {
+  if (code && [...el.options].some(o => o.value === code)) el.value = code;
+  else if (fallback && [...el.options].some(o => o.value === fallback)) el.value = fallback;
+}
+
 async function loadStops() {
   const r = await fetch("/?stops=1");
   if (!r.ok) throw new Error("stops " + r.status);
   const data = await r.json();
+  twins = buildTwins(data.stops || []);
   const prev = saved() || {};
   const q = new URLSearchParams(location.search);
   const from = q.get("from") || prev.from || "1378";
@@ -197,7 +237,10 @@ async function loadTrips() {
 }
 
 document.getElementById("swap").onclick = () => {
-  const a = FROM.value; FROM.value = TO.value; TO.value = a; loadTrips();
+  const from = FROM.value, to = TO.value;
+  setSelect(FROM, twinOf(to), to);
+  setSelect(TO, twinOf(from), from);
+  loadTrips();
 };
 FROM.onchange = TO.onchange = loadTrips;
 
