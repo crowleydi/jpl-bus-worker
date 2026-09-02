@@ -6,14 +6,12 @@
 <title>Route 53 · Caltech ↔ JPL</title>
 <style>
   :root {
-    --bg: #070814;
-    --card: #12162a;
-    --ink: #f3f5fb;
-    --muted: #8b93ab;
-    --line: #2a3148;
-    --jpl: #E31937;
-    --nasa: #0B3D91;
-    --sky: #7ec8ff;
+    --bg: #0a0607;
+    --card: #161011;
+    --ink: #f3f0f1;
+    --muted: #9a8e91;
+    --line: #3a2a2d;
+    --jpl: #FF2A45;
     --amber: #ffb347;
   }
   * { box-sizing: border-box; }
@@ -24,17 +22,16 @@
     font: 16px/1.45 ui-rounded, "Nunito", "Segoe UI", system-ui, sans-serif;
     color: var(--ink);
     background:
-      radial-gradient(900px 420px at 8% -12%, #0B3D91 0%, transparent 58%),
-      radial-gradient(640px 280px at 110% -8%, #E3193744 0%, transparent 52%),
+      radial-gradient(700px 380px at 50% -20%, #3a1018 0%, transparent 60%),
       var(--bg);
   }
   main { max-width: 42rem; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
   header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.2rem; }
   .bus {
     width: 3.4rem; height: 3.4rem; border-radius: 1.1rem;
-    background: linear-gradient(160deg, #1a4fb8, var(--jpl));
+    background: linear-gradient(160deg, #2a1418, #5a1824);
     display: grid; place-items: center; font-size: 1.7rem;
-    box-shadow: 0 8px 24px #E3193744;
+    box-shadow: 0 8px 24px #E3193722;
   }
   h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.02em; }
   .sub { color: var(--muted); font-size: .92rem; }
@@ -51,7 +48,7 @@
   select {
     width: 100%;
     color: var(--ink);
-    background: #0a0e1c;
+    background: #0c0809;
     border: 1px solid var(--line);
     border-radius: .7rem;
     padding: .65rem .7rem;
@@ -59,7 +56,7 @@
   }
   button.swap {
     border: 0; cursor: pointer;
-    background: #1a2240; color: var(--sky);
+    background: #241418; color: var(--jpl);
     border-radius: .7rem; padding: .65rem .8rem; font: inherit;
   }
   button.swap:hover { filter: brightness(1.15); }
@@ -84,7 +81,6 @@
     letter-spacing: -0.05em;
     color: var(--jpl);
   }
-  .trip.enroute .countdown .num { color: var(--sky); }
   .countdown .unit {
     display: block;
     margin-top: .2rem;
@@ -114,7 +110,7 @@
     border-radius: 999px; padding: .2rem .5rem; border: 1px solid var(--line); color: var(--muted);
   }
   .badge.est { color: var(--amber); border-color: #5a4a22; }
-  .badge.en { color: var(--sky); border-color: #2a4a66; }
+  .badge.en { color: #ff8a9b; border-color: #5a3344; }
   .empty, .err { color: var(--muted); padding: 1.2rem .2rem; }
   .err { color: #ff8a9b; }
 </style>
@@ -257,7 +253,7 @@ function card(t) {
     ? '<div class="when arrive">' + (enroute ? "" : "arrive ") + arriveTime + "</div>"
     : "";
   return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '>' +
-    '<div class="countdown"><span class="num" style="font-size:56px;font-weight:800;line-height:0.9">' + mins + '</span><span class="unit">min</span></div>' +
+    '<div class="countdown"><span class="num" style="font-size:56px;font-weight:800;line-height:0.9;color:#FF2A45">' + mins + '</span><span class="unit">min</span></div>' +
     '<div class="body">' + leaveLine + arriveLine +
     '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div>" +
     '<div class="badges">' + badges + "</div></div></article>";
