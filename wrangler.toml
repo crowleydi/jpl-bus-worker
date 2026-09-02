@@ -1,5 +1,5 @@
 name = "jpl-bus"
-main = "src/index.js"
+main = "src/server.js"
 compatibility_date = "2026-08-17"
 
 [[kv_namespaces]]
@@ -13,3 +13,7 @@ crons = ["30 12 * * 1-5", "30 22 * * 1-5"]
 enabled = true
 invocation_logs = true
 
+# Import src/ui.html as a raw string in the worker.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]

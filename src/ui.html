@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Route 53 · Caltech ↔ JPL</title>
+<style>
+  :root {
+    --bg: #0a0607;
+    --card: #161011;
+    --ink: #f3f0f1;
+    --muted: #9a8e91;
+    --line: #3a2a2d;
+    --jpl: #FF2A45;
+    --amber: #ffb347;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font: 16px/1.45 ui-rounded, "Nunito", "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(700px 380px at 50% -20%, #3a1018 0%, transparent 60%),
+      var(--bg);
+  }
+  main { max-width: 42rem; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.2rem; }
+  .bus {
+    width: 3.4rem; height: 3.4rem; border-radius: 1.1rem;
+    background: linear-gradient(160deg, #2a1418, #5a1824);
+    display: grid; place-items: center; font-size: 1.7rem;
+    box-shadow: 0 8px 24px #E3193722;
+  }
+  h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); font-size: .92rem; }
+  .panel {
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 1.15rem;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+  }
+  .row { display: grid; grid-template-columns: 1fr auto 1fr; gap: .6rem; align-items: end; }
+  @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+  label { display: block; font-size: .75rem; color: var(--muted); margin-bottom: .3rem; letter-spacing: .04em; text-transform: uppercase; }
+  select {
+    width: 100%;
+    color: var(--ink);
+    background: #0c0809;
+    border: 1px solid var(--line);
+    border-radius: .7rem;
+    padding: .65rem .7rem;
+    font: inherit;
+  }
+  button.swap {
+    border: 0; cursor: pointer;
+    background: #241418; color: var(--jpl);
+    border-radius: .7rem; padding: .65rem .8rem; font: inherit;
+  }
+  button.swap:hover { filter: brightness(1.15); }
+  .meta { margin: .85rem 0 0; color: var(--muted); font-size: .82rem; }
+  .trips { display: grid; gap: .7rem; margin-top: 1rem; }
+  .trip {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .9rem 1rem;
+  }
+  .countdown {
+    flex: 0 0 5.8rem;
+    width: 5.8rem;
+    text-align: center;
+    line-height: 1;
+  }
+  .countdown .num {
+    display: block;
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    color: var(--jpl);
+  }
+  .countdown .unit {
+    display: block;
+    margin-top: .2rem;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .body { flex: 1; min-width: 0; }
+  .when {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: .92rem;
+  }
+  .trip.waiting .leave,
+  .trip.enroute .arrive {
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+  }
+  .detail { color: var(--muted); font-size: .82rem; margin-top: .15rem; }
+  .badges { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-start; margin-top: .45rem; }
+  .badge {
+    font-size: .7rem; letter-spacing: .03em; text-transform: uppercase;
+    border-radius: 999px; padding: .2rem .5rem; border: 1px solid var(--line); color: var(--muted);
+  }
+  .badge.est { color: var(--amber); border-color: #5a4a22; }
+  .badge.en { color: #ff8a9b; border-color: #5a3344; }
+  .empty, .err { color: var(--muted); padding: 1.2rem .2rem; }
+  .err { color: #ff8a9b; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="bus" aria-hidden="true">🚌</div>
+    <div>
+      <h1>Pasadena Transit 53</h1>
+      <div class="sub">Caltech ↔ JPL · pick a pair of stops</div>
+    </div>
+  </header>
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label for="from">Start</label>
+        <select id="from"></select>
+      </div>
+      <button class="swap" id="swap" type="button" title="Swap directions (other curb)">⇄</button>
+      <div>
+        <label for="to">Destination</label>
+        <select id="to"></select>
+      </div>
+    </div>
+    <p class="meta" id="meta">Loading stops…</p>
+  </div>
+  <div class="trips" id="trips"></div>
+</main>
+<script>
+const FROM = document.getElementById("from");
+const TO = document.getElementById("to");
+const TRIPS = document.getElementById("trips");
+const META = document.getElementById("meta");
+const KEY = "jpl53.pair";
+let twins = {};
+
+// Same-intersection names usually match. These are the nearby-but-renamed twins.
+const NEARBY = {
+  "322": "309",   // Maintenance Yards ↔ Mountain St & I-210
+  "309": "322",
+  "5161": "11972", // Mountain & Fair Oaks ↔ Fair Oaks & Mountain
+  "11972": "5161",
+  "1709": "10261", // Walnut & Raymond ↔ Walnut & Fair Oaks
+  "10261": "1709",
+  "1383": "13681", // Del Mar & Lake ↔ Lake & San Pasqual
+  "13681": "1383",
+};
+
+function optLabel(s) {
+  const arrow = s.dir === "to-jpl" ? "↑ JPL" : s.dir === "from-jpl" ? "↓ Caltech" : "● both";
+  return s.name + "  ·  " + s.code + "  " + arrow;
+}
+function fillSelect(el, stops, selected) {
+  const groups = [
+    ["to-jpl", "Toward JPL"],
+    ["from-jpl", "Toward Caltech"],
+    ["both", "Either direction"],
+  ];
+  el.innerHTML = "";
+  for (const [dir, label] of groups) {
+    const g = document.createElement("optgroup");
+    g.label = label;
+    for (const s of stops.filter(x => x.dir === dir)) {
+      const o = document.createElement("option");
+      o.value = s.code;
+      o.textContent = optLabel(s);
+      g.appendChild(o);
+    }
+    if (g.childElementCount) el.appendChild(g);
+  }
+  if (selected && [...el.options].some(o => o.value === selected)) el.value = selected;
+}
+function saved() {
+  try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return null; }
+}
+function save() { localStorage.setItem(KEY, JSON.stringify({ from: FROM.value, to: TO.value })); }
+
+function buildTwins(stops) {
+  const map = { ...NEARBY };
+  const byName = {};
+  for (const s of stops) (byName[s.name] ||= []).push(s);
+  for (const group of Object.values(byName)) {
+    const inbound = group.find(s => s.dir === "to-jpl");
+    const outbound = group.find(s => s.dir === "from-jpl");
+    const both = group.find(s => s.dir === "both");
+    if (both) map[both.code] = both.code;
+    if (inbound && outbound) {
+      if (!map[inbound.code]) map[inbound.code] = outbound.code;
+      if (!map[outbound.code]) map[outbound.code] = inbound.code;
+    }
+  }
+  return map;
+}
+
+function twinOf(code) {
+  return twins[code] || code;
+}
+
+function setSelect(el, code, fallback) {
+  if (code && [...el.options].some(o => o.value === code)) el.value = code;
+  else if (fallback && [...el.options].some(o => o.value === fallback)) el.value = fallback;
+}
+
+async function loadStops() {
+  const r = await fetch("/?stops=1");
+  if (!r.ok) throw new Error("stops " + r.status);
+  const data = await r.json();
+  twins = buildTwins(data.stops || []);
+  const prev = saved() || {};
+  const q = new URLSearchParams(location.search);
+  const from = q.get("from") || prev.from || "1378";
+  const to = q.get("to") || prev.to || "2707";
+  fillSelect(FROM, data.stops, from);
+  fillSelect(TO, data.stops, to);
+  META.textContent = "schedule " + (data.feed_version || "?") +
+    (data.gtfs_last_modified ? "  ·  zip " + data.gtfs_last_modified.replace("T", " ").replace(".000Z", "Z") : "");
+}
+
+function card(t) {
+  const dest = t.to || t.stop;
+  const origin = t.from;
+  const enroute = !!t.enroute;
+  const boardMins = origin && origin.minutes != null ? origin.minutes : null;
+  const arriveMins = dest && dest.minutes != null ? dest.minutes : null;
+  const mins = enroute
+    ? (arriveMins != null ? arriveMins : "–")
+    : (boardMins != null ? boardMins : (arriveMins != null ? arriveMins : "–"));
+  const leaveTime = origin && origin.time ? origin.time : "";
+  const arriveTime = dest && dest.time ? dest.time : "";
+  const badges = [
+    t.estimated ? '<span class="badge est">estimated</span>' : "",
+    enroute ? '<span class="badge en">en route</span>' : "",
+    t.headsign ? '<span class="badge">' + t.headsign + "</span>" : "",
+  ].join("");
+  const leaveLine = leaveTime
+    ? '<div class="when leave">' + (enroute ? "left " : "") + leaveTime + "</div>"
+    : "";
+  const arriveLine = arriveTime
+    ? '<div class="when arrive">' + (enroute ? "" : "arrive ") + arriveTime + "</div>"
+    : "";
+  return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '>' +
+    '<div class="countdown"><span class="num" style="font-size:56px;font-weight:800;line-height:0.9;color:#FF2A45">' + mins + '</span><span class="unit">min</span></div>' +
+    '<div class="body">' + leaveLine + arriveLine +
+    '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div>" +
+    '<div class="badges">' + badges + "</div></div></article>";
+}
+
+async function loadTrips() {
+  const from = FROM.value, to = TO.value;
+  if (!from || !to) return;
+  save();
+  const url = from === to ? "/?stop=" + encodeURIComponent(from) : "/?from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+  TRIPS.innerHTML = '<p class="empty">Checking the little buses…</p>';
+  try {
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.status);
+    const trips = data.trips || [];
+    META.textContent = "updated " + (data.updated || "just now") +
+      "  ·  schedule " + (data.feed_version || "?");
+    TRIPS.innerHTML = trips.length
+      ? trips.map(card).join("")
+      : '<p class="empty">No upcoming trips for that pair. Try the other curb, or a later window.</p>';
+  } catch (err) {
+    TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + "</p>";
+  }
+}
+
+document.getElementById("swap").onclick = () => {
+  const from = FROM.value, to = TO.value;
+  setSelect(FROM, twinOf(to), to);
+  setSelect(TO, twinOf(from), from);
+  loadTrips();
+};
+FROM.onchange = TO.onchange = loadTrips;
+
+loadStops().then(loadTrips).catch(err => {
+  META.textContent = "Could not load stops";
+  TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + "</p>";
+});
+setInterval(loadTrips, 20000);
+</script>
+</body>
+</html>
