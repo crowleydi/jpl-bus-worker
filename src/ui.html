@@ -65,14 +65,34 @@
   .meta { margin: .85rem 0 0; color: var(--muted); font-size: .82rem; }
   .trips { display: grid; gap: .7rem; margin-top: 1rem; }
   .trip {
-    display: grid; grid-template-columns: auto 1fr auto; gap: .85rem; align-items: center;
-    background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .85rem 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: .9rem 1rem;
   }
-  .mins {
-    font-size: 1.7rem; font-weight: 800; color: var(--jpl); min-width: 3.4rem;
+  .countdown {
+    flex: 0 0 4.6rem;
+    text-align: center;
+    line-height: 1;
   }
-  .trip.enroute .mins { color: var(--sky); }
-  .mins small { display: block; font-size: .7rem; color: var(--muted); font-weight: 600; }
+  .countdown .num {
+    display: block;
+    font-size: 2.55rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--jpl);
+  }
+  .trip.enroute .countdown .num { color: var(--sky); }
+  .countdown .unit {
+    display: block;
+    margin-top: .2rem;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .body { flex: 1; min-width: 0; }
   .when {
     color: var(--muted);
     font-weight: 600;
@@ -86,7 +106,7 @@
     letter-spacing: -0.02em;
   }
   .detail { color: var(--muted); font-size: .82rem; margin-top: .15rem; }
-  .badges { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
+  .badges { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-start; margin-top: .45rem; }
   .badge {
     font-size: .7rem; letter-spacing: .03em; text-transform: uppercase;
     border-radius: 999px; padding: .2rem .5rem; border: 1px solid var(--line); color: var(--muted);
@@ -235,10 +255,10 @@ function card(t) {
     ? '<div class="when arrive">' + (enroute ? "" : "arrive ") + arriveTime + "</div>"
     : "";
   return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '>' +
-    '<div class="mins">' + mins + "<small>min</small></div>" +
-    '<div class="times">' + leaveLine + arriveLine +
-    '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div></div>" +
-    '<div class="badges">' + badges + "</div></article>";
+    '<div class="countdown"><span class="num">' + mins + '</span><span class="unit">min</span></div>' +
+    '<div class="body">' + leaveLine + arriveLine +
+    '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div>" +
+    '<div class="badges">' + badges + "</div></div></article>";
 }
 
 async function loadTrips() {
