@@ -12,6 +12,7 @@
     --muted: #9a8e91;
     --line: #3a2a2d;
     --jpl: #FF2A45;
+    --go: #2ED47A;
     --amber: #ffb347;
   }
   * { box-sizing: border-box; }
@@ -79,7 +80,10 @@
     font-size: 56px;
     font-weight: 800;
     letter-spacing: -0.05em;
-    color: var(--jpl);
+    color: var(--jpl); /* red = minutes until destination */
+  }
+  .trip.waiting .countdown .num {
+    color: var(--go); /* green = bus still coming to you */
   }
   .countdown .unit {
     display: block;
@@ -252,8 +256,8 @@ function card(t) {
   const arriveLine = arriveTime
     ? '<div class="when arrive">' + (enroute ? "" : "arrive ") + arriveTime + "</div>"
     : "";
-  return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '>' +
-    '<div class="countdown"><span class="num" style="font-size:56px;font-weight:800;line-height:0.9;color:#FF2A45">' + mins + '</span><span class="unit">min</span></div>' +
+  return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '">' +
+    '<div class="countdown"><span class="num">' + mins + '</span><span class="unit">min</span></div>' +
     '<div class="body">' + leaveLine + arriveLine +
     '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div>" +
     '<div class="badges">' + badges + "</div></div></article>";
@@ -276,7 +280,7 @@ async function loadTrips() {
       ? trips.map(card).join("")
       : '<p class="empty">No upcoming trips for that pair. Try the other curb, or a later window.</p>';
   } catch (err) {
-    TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + "</p>";
+    TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + '</p>';
   }
 }
 
@@ -290,7 +294,7 @@ FROM.onchange = TO.onchange = loadTrips;
 
 loadStops().then(loadTrips).catch(err => {
   META.textContent = "Could not load stops";
-  TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + "</p>";
+  TRIPS.innerHTML = '<p class="err">' + String(err.message || err) + '</p>';
 });
 setInterval(loadTrips, 20000);
 </script>
