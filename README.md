@@ -2,12 +2,13 @@
 
 Cloudflare Worker that turns Pasadena Transit’s GTFS-Realtime feed into clean JSON for **route 53** (Caltech ↔ JPL).
 
-Live example:
+Live examples:
 
-```
-https://jpl-bus.kanstin.workers.dev/                 HTML stop picker
-https://jpl-bus.kanstin.workers.dev/?from=1378&to=2707
-```
+HTLM stop picker: \
+[https://jpl-bus.kanstin.workers.dev/](https://jpl-bus.kanstin.workers.dev/)
+
+JSON: \
+[https://jpl-bus.kanstin.workers.dev/?from=1378&to=2707](https://jpl-bus.kanstin.workers.dev/?from=1378&to=2707)
 
 ---
 
