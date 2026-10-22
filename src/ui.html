@@ -94,6 +94,18 @@
     text-transform: uppercase;
     color: var(--muted);
   }
+  .countdown .enroute-tag {
+    display: inline-block;
+    margin-top: .45rem;
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #ff8a9b;
+    border: 1px solid #5a3344;
+    border-radius: 999px;
+    padding: .15rem .4rem;
+  }
   .body { flex: 1; min-width: 0; }
   .when {
     color: var(--muted);
@@ -247,7 +259,6 @@ function card(t) {
   const arriveTime = dest && dest.time ? dest.time : "";
   const badges = [
     t.estimated ? '<span class="badge est">estimated</span>' : "",
-    enroute ? '<span class="badge en">en route</span>' : "",
     t.headsign ? '<span class="badge">' + t.headsign + "</span>" : "",
   ].join("");
   const leaveLine = leaveTime
@@ -256,8 +267,9 @@ function card(t) {
   const arriveLine = arriveTime
     ? '<div class="when arrive">' + (enroute ? "" : "arrive ") + arriveTime + "</div>"
     : "";
+  const enrouteTag = enroute ? '<span class="enroute-tag">en route</span>' : "";
   return '<article class="trip ' + (enroute ? "enroute" : "waiting") + '">' +
-    '<div class="countdown"><span class="num">' + mins + '</span><span class="unit">min</span></div>' +
+    '<div class="countdown"><span class="num">' + mins + '</span><span class="unit">min</span>' + enrouteTag + '</div>' +
     '<div class="body">' + leaveLine + arriveLine +
     '<div class="detail">' + (t.trip_id ? "trip " + t.trip_id : "") + "</div>" +
     '<div class="badges">' + badges + "</div></div></article>";
